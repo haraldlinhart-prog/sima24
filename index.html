@@ -282,6 +282,56 @@
 
     .fact-label { font-size: 0.8rem; color: rgba(255,255,255,0.55); margin-top: 0.4rem; }
 
+    /* ── THAILAND NEWS WIDGET (Feedzy-style) ── */
+    .th-news { margin-top: 3.5rem; }
+    .th-news-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .th-news-eyebrow {
+      font-family: var(--font-body); font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .th-news-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--gold-light);
+      display: inline-block; animation: th-pulse 2s ease-in-out infinite;
+    }
+    @keyframes th-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .th-news-updated { font-size: 0.72rem; color: rgba(255,255,255,0.4); font-family: var(--font-body); }
+    .th-news-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; }
+    .th-card {
+      display: flex; flex-direction: column; text-decoration: none;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(201,160,87,0.18);
+      border-radius: 10px; overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      opacity: 0; animation: th-fade-in 0.5s ease forwards;
+    }
+    .th-card:hover { transform: translateY(-3px); border-color: var(--gold); background: rgba(255,255,255,0.07); }
+    @keyframes th-fade-in { to { opacity: 1; } }
+    .th-card-img {
+      width: 100%; aspect-ratio: 16/10; background-size: cover; background-position: center;
+      background-color: rgba(255,255,255,0.06);
+    }
+    .th-card-body { padding: 0.9rem 1rem 1.05rem; }
+    .th-card-title {
+      font-size: 0.86rem; font-weight: 600; color: var(--white); line-height: 1.42;
+      margin-bottom: 0.55rem; display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .th-card-meta {
+      font-size: 0.68rem; color: rgba(255,255,255,0.45); text-transform: uppercase;
+      letter-spacing: 0.03em; font-family: var(--font-body);
+    }
+    .th-card-skeleton {
+      aspect-ratio: 3/4; border-radius: 10px; border: 1px solid rgba(201,160,87,0.12);
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%; animation: th-shimmer 1.4s infinite;
+    }
+    @keyframes th-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    @media (max-width: 900px) { .th-news-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .th-news-grid { grid-template-columns: 1fr; } }
+
     /* ── TERMIN ── */
     #termin { background: var(--cream); }
 
@@ -583,10 +633,21 @@
           </div>
         </div>
       </div>
+
+      <div class="th-news" id="th-news">
+        <div class="th-news-head">
+          <span class="th-news-eyebrow"><span class="th-news-dot"></span>Latest Thailand News</span>
+          <span class="th-news-updated" id="th-news-updated"></span>
+        </div>
+        <div class="th-news-grid" id="th-news-grid">
+          <div class="th-card-skeleton"></div>
+          <div class="th-card-skeleton"></div>
+          <div class="th-card-skeleton"></div>
+          <div class="th-card-skeleton"></div>
+        </div>
+      </div>
     </div>
   </section>
-
-  <!-- TERMIN -->
   <section id="termin">
     <div class="section-inner">
       <div style="text-align:center">
@@ -948,6 +1009,68 @@ async function pan21NlSubmit(){
 }
 </script>
 <!-- BEEHIIV:END -->
+
+<script>
+(function () {
+  var grid = document.getElementById('th-news-grid');
+  var updatedEl = document.getElementById('th-news-updated');
+  if (!grid) return;
+
+  function timeAgoLabel(date) {
+    var diffMin = Math.round((Date.now() - date.getTime()) / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return diffMin + 'm ago';
+    var diffH = Math.round(diffMin / 60);
+    if (diffH < 24) return diffH + 'h ago';
+    return Math.round(diffH / 24) + 'd ago';
+  }
+
+  function formatPubDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  }
+
+  function render(items) {
+    if (!items || items.length === 0) return;
+    grid.innerHTML = items.map(function (item, i) {
+      var img = item.image ? 'background-image:url(\'' + item.image.replace(/'/g, "%27") + '\')' : '';
+      var meta = (item.source || 'Thailand News') + (formatPubDate(item.pubDate) ? ' &middot; ' + formatPubDate(item.pubDate) : '');
+      return (
+        '<a class="th-card" href="' + item.link + '" target="_blank" rel="noopener" style="animation-delay:' + (i * 0.08) + 's">' +
+          '<div class="th-card-img" style="' + img + '"></div>' +
+          '<div class="th-card-body">' +
+            '<div class="th-card-title">' + item.title + '</div>' +
+            '<div class="th-card-meta">' + meta + '</div>' +
+          '</div>' +
+        '</a>'
+      );
+    }).join('');
+  }
+
+  var lastFetch = null;
+
+  function load() {
+    fetch('/api/thailand-news')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        render(data.items);
+        lastFetch = new Date();
+        if (updatedEl) updatedEl.textContent = 'Updated ' + timeAgoLabel(lastFetch);
+      })
+      .catch(function () {});
+  }
+
+  load();
+  // Refetch periodically so the tiles pull in newer headlines throughout the day.
+  setInterval(load, 15 * 60 * 1000);
+  // Keep the "Updated Xm ago" label ticking between refetches.
+  setInterval(function () {
+    if (lastFetch && updatedEl) updatedEl.textContent = 'Updated ' + timeAgoLabel(lastFetch);
+  }, 60 * 1000);
+})();
+</script>
 
 
 <!-- DIRECTORIES:START -->
