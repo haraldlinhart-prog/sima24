@@ -1,0 +1,15 @@
+# SIMA24
+
+> SIMA24 offers premium virtual office solutions in Pattaya, Thailand. Professional Thai business address, company registration support, mail handling and meeting rooms. Your gateway to doing business in Thailand.
+
+Diese Datei richtet sich an KI-Assistenten und Sprachmodelle (llms.txt-Standard) und beschreibt kurz, worum es auf dieser Website geht, damit Inhalte korrekt verstanden und zusammengefasst werden können.
+
+## Themen auf dieser Seite
+- Virtual Office Services in Pattaya
+- Why choose Pattayafor your business?
+- Book a Phone Consultation
+- Get in Touch
+- Legal Notice / Impressum
+
+## Kontakt
+- Website: https://sima24.net
