@@ -44,6 +44,27 @@ function isGibberish(str) {
   return false
 }
 
+// Normalizes Gmail addresses so dot/plus obfuscation (e.g. "o.o.ch.oacr4.6@gmail.com")
+// can't be used to slip a blocked sender past a simple string match.
+function normalizeEmail(email) {
+  if (!email) return ''
+  const lower = email.trim().toLowerCase()
+  const [local, domain] = lower.split('@')
+  if (!domain) return lower
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    const stripped = local.split('+')[0].replace(/\./g, '')
+    return `${stripped}@gmail.com`
+  }
+  return lower
+}
+
+// Network-wide known bot senders (normalized form). Add new repeat offenders here.
+const BLOCKED_EMAILS = new Set([
+  'edipajulodev85@gmail.com',
+  'atanaxawum896@gmail.com',
+  'oochoacr46@gmail.com',
+])
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -52,6 +73,11 @@ export default async function handler(req, res) {
   if (website) return res.status(200).json({ ok: true })
   if (!elapsed || elapsed < 3) return res.status(200).json({ ok: true })
   if (!name || !email || !nachricht) return res.status(400).json({ error: 'Missing fields' })
+
+  if (BLOCKED_EMAILS.has(normalizeEmail(email))) {
+    // Silent success, no hint to the bot that this specific address is blocked.
+    return res.status(200).json({ ok: true })
+  }
 
   if (isGibberish(name) || isGibberish(thema) || isGibberish(nachricht)) {
     // Silent success, same as honeypot/timing rejection — no hint to the bot that it
