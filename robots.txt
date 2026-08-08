@@ -33,4 +33,4 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
-Sitemap: https://sima24.net/sitemap.xml
+Sitemap: https://www.sima24.net/sitemap.xml
