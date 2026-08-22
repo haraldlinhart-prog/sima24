@@ -36,7 +36,13 @@ function isGibberish(str) {
     }
     const transitionRatio = transitions / (letters.length - 1);
     const vowelThreshold = letters.length >= 14 ? 0.28 : (letters.length >= 11 ? 0.22 : 0.16);
-    if (vowelRatio < vowelThreshold && transitionRatio > 0.3) return true;
+    // Normal case-transition requirement catches wildly mixed-case tokens
+    // ("WXQnZcxqFFurVSKaEGSBzeH"). But bots that just capitalize the first
+    // letter ("Wzmzgrzr") produce only a single transition and slide past
+    // that check even at 0% vowels. Real words essentially never have a
+    // near-zero vowel ratio, so treat that alone as sufficient regardless
+    // of transitions.
+    if (vowelRatio < vowelThreshold && (transitionRatio > 0.3 || vowelRatio < 0.10)) return true;
   }
   if (/\S{61,}/.test(str || '')) return true;
   return false;
@@ -62,6 +68,7 @@ const BLOCKED_EMAILS = new Set([
   'edipajulodev85@gmail.com',
   'atanaxawum896@gmail.com',
   'oochoacr46@gmail.com',
+  'narawegizu50@gmail.com',
 ])
 
 export default async function handler(req, res) {
