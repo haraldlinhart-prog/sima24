@@ -62,6 +62,25 @@ function normalizeEmail(email) {
   return lower
 }
 
+// Zusätzliche, engere Prüfung speziell für Nachrichten, die nur aus einem
+// generierten Fantasienamen + Rechtsform bestehen (z.B. "Nmbhsyh LLC") --
+// ein bei sima24.net wiederkehrendes Bot-Muster fuer "Virtual Office"-
+// Anfragen. Die allgemeine isGibberish()-Pruefung zaehlt 'y' grosszuegig
+// als Vokal, was ein Bot durch gezieltes Einstreuen eines 'y' ausnutzen
+// kann, um knapp ueber die Schwelle zu rutschen (beobachtet 22.08.26:
+// "Nmbhsyh" landet bei 0.143 statt 0.16 Schwelle -- durch das 'y' gerade
+// noch drueber). Fuer dieses enge Muster (kurzes Wort + Rechtsformkuerzel,
+// sonst nichts) zaehlen nur echte Vokale (a,e,i,o,u), kein 'y'.
+function looksLikeFakeCompanyName(str) {
+  const trimmed = (str || '').trim();
+  const m = trimmed.match(/^([A-Za-zÄÖÜäöüß]{5,20})\s+(LLC|Ltd\.?|GmbH|Inc\.?|Corp\.?|Co\.?|S\.?A\.?|LLP)\.?$/i);
+  if (!m) return false;
+  const word = m[1];
+  const realVowels = (word.match(/[aeiouAEIOUäöüÄÖÜ]/g) || []).length;
+  const ratio = realVowels / word.length;
+  return ratio < 0.15;
+}
+
 // Network-wide known bot senders (normalized form). Add new repeat offenders here.
 const BLOCKED_EMAILS = new Set([
   'zazacukeq266@gmail.com',
@@ -69,6 +88,7 @@ const BLOCKED_EMAILS = new Set([
   'atanaxawum896@gmail.com',
   'oochoacr46@gmail.com',
   'narawegizu50@gmail.com',
+  'uvahowov122@gmail.com',
 ])
 
 export default async function handler(req, res) {
@@ -85,7 +105,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true })
   }
 
-  if (isGibberish(name) || isGibberish(thema) || isGibberish(nachricht)) {
+  if (isGibberish(name) || isGibberish(thema) || isGibberish(nachricht) || looksLikeFakeCompanyName(nachricht)) {
     // Silent success, same as honeypot/timing rejection — no hint to the bot that it
     // was specifically the content that got it caught.
     return res.status(200).json({ ok: true })
