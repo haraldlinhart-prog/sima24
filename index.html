@@ -897,9 +897,9 @@
       // Honeypot
       if (document.querySelector('[name="website"]').value) return
 
-      // Dwell time
+      // Dwell time (kept in sync with the server-side floor in api/contact.js)
       const elapsed = (Date.now() - parseInt(document.getElementById('formstart').value)) / 1000
-      if (elapsed < 3) {
+      if (elapsed < 8) {
         msg.textContent = 'Please fill in the form completely.'
         msg.className = 'form-msg error'
         return

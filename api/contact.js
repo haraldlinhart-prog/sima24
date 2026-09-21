@@ -89,6 +89,7 @@ const BLOCKED_EMAILS = new Set([
   'oochoacr46@gmail.com',
   'narawegizu50@gmail.com',
   'uvahowov122@gmail.com',
+  'rekopiridal17@gmail.com', // reported 2026-09-21, "Tejonlbd Emgehab" / "Akxasvcux LLC"
 ])
 
 export default async function handler(req, res) {
@@ -97,7 +98,11 @@ export default async function handler(req, res) {
   const { name, email, thema, nachricht, elapsed, website } = req.body
 
   if (website) return res.status(200).json({ ok: true })
-  if (!elapsed || elapsed < 3) return res.status(200).json({ ok: true })
+  // Raised from 3s after a bot submitted at 6s (observed 2026-09-21, "Tejonlbd Emgehab" /
+  // "Akxasvcux LLC") and slipped past the content checks too, since its vowel ratio was
+  // high enough to dodge isGibberish/looksLikeFakeCompanyName. A real visitor filling
+  // name, email, topic and a message never does it in under 8s.
+  if (!elapsed || elapsed < 8) return res.status(200).json({ ok: true })
   if (!name || !email || !nachricht) return res.status(400).json({ error: 'Missing fields' })
 
   if (BLOCKED_EMAILS.has(normalizeEmail(email))) {
