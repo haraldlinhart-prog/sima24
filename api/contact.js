@@ -81,6 +81,40 @@ function looksLikeFakeCompanyName(str) {
   return ratio < 0.15;
 }
 
+// Strukturelle Bot-Signale statt immer neuer Vokal-Schwellen (die Bots wiederholt
+// knapp unterlaufen haben; zuletzt 28.09.26: "Gljx Yokjdoejn" / "Vlhko LLC" /
+// "x.u.kulat.o.t.i.0.8.5@gmail.com", 12s Verweildauer).
+
+// Gmail ignoriert Punkte im Local-Part. Bots zerhacken ihre Adresse deshalb in
+// viele Punkt-Segmente (x.u.kulat.o.t.i.0.8.5, o.o.ch.oacr4.6), damit jede
+// Einsendung wie eine neue Adresse aussieht. Echte Nutzer haben 0-2 Punkte
+// (vorname.nachname) und nie mehrere Ein-Zeichen-Segmente.
+function isObfuscatedGmail(email) {
+  const [local, domain] = (email || '').trim().toLowerCase().split('@')
+  if (domain !== 'gmail.com' && domain !== 'googlemail.com') return false
+  const segments = local.split('+')[0].split('.')
+  const dots = segments.length - 1
+  const singleChar = segments.filter(s => s.length === 1).length
+  return dots >= 3 || singleChar >= 2
+}
+
+// Ein Namensbestandteil ab 4 Buchstaben ganz ohne Vokal ("Gljx") ist kein echter
+// Name; isGibberish() prueft erst ab 6 Buchstaben und sieht so etwas nicht.
+function hasVowellessNamePart(name) {
+  return (name || '').split(/[\s\-]+/).some(p => {
+    const letters = p.replace(/[^A-Za-zÄÖÜäöüß]/g, '')
+    return letters.length >= 4 && !/[aeiouyäöüAEIOUYÄÖÜ]/.test(letters)
+  })
+}
+
+// Nachricht besteht nur aus "<Einzelwort> <Rechtsform>" (z.B. "Vlhko LLC"),
+// ohne jede Frage oder Angabe -- das wiederkehrende Bot-Muster bei sima24.net.
+function isBareCompanyMessage(str) {
+  return /^[A-Za-zÄÖÜäöüß]{3,20}\s+(LLC|Ltd\.?|GmbH|Inc\.?|Corp\.?|Co\.?|S\.?A\.?|LLP)\.?$/i.test((str || '').trim())
+}
+
+const FREEMAIL = /@(gmail|googlemail|outlook|hotmail|yahoo|live|gmx|web|aol|icloud|proton(mail)?)\.[a-z.]+$/i
+
 // Network-wide known bot senders (normalized form). Add new repeat offenders here.
 const BLOCKED_EMAILS = new Set([
   'zazacukeq266@gmail.com',
@@ -90,6 +124,7 @@ const BLOCKED_EMAILS = new Set([
   'narawegizu50@gmail.com',
   'uvahowov122@gmail.com',
   'rekopiridal17@gmail.com', // reported 2026-09-21, "Tejonlbd Emgehab" / "Akxasvcux LLC"
+  'xukulatoti085@gmail.com', // reported 2026-09-28, "Gljx Yokjdoejn" / "Vlhko LLC"
 ])
 
 export default async function handler(req, res) {
@@ -107,6 +142,14 @@ export default async function handler(req, res) {
 
   if (BLOCKED_EMAILS.has(normalizeEmail(email))) {
     // Silent success, no hint to the bot that this specific address is blocked.
+    return res.status(200).json({ ok: true })
+  }
+
+  if (
+    isObfuscatedGmail(email) ||
+    hasVowellessNamePart(name) ||
+    (isBareCompanyMessage(nachricht) && FREEMAIL.test(email.trim()))
+  ) {
     return res.status(200).json({ ok: true })
   }
 
